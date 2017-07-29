@@ -5,6 +5,39 @@
 --         Be careful to not running-out-of-energy.
 -- script: lua
 
+DATA = {
+	ENNEMY = { type="ennemy",
+	[1] = {name="ennemy_01",hp=4,armor=0,atk=1,w=8,h=8,spr=4,flip=0,
+		   speed=1,vx=0,sgnX=0,sgnY=0,vy=0,jumpHeight=3}
+	},
+	PLAYER = {
+		   type="hero",name="hero",hp=50,armor=12,atk=5,w=16,h=16,spr=1,flip=0,
+		   speed=1,vx=0,sgnX=0,sgnY=0,vy=0,jumpHeight=3
+	},
+	BULLET = {
+		   type="bullet",name="bullet_01",w=1,h=1	
+}
+}
+DATA.PLAYER.update = {
+		move = function()
+			--trace(mget((player.x+player.vx+7)//8,(player.y+player.vy+16-32)//8))
+			if(collidesolid(player.x+player.vx-player.sgnX,player.y+player.vy+8-32-player.sgnY)) then
+				if (player.sgnX>0) then
+				player.x = player.x - 1
+				end
+				if (player.sgnX<0) then
+				player.x = player.x + 1
+				end
+				if (player.vy>0 or player.vy<0) then
+				player.vy = 0
+			    end
+			end
+	    end
+}
+shake=0
+d=4
+solids = {[1]=true}
+gravity = 0.15
 --*********************************************
 --                   ^GAMESTATE
 --*********************************************
@@ -15,8 +48,6 @@ gameState = {
 	TITLE = "title",
 	GAME = "game"
 }
-solids = {[1]=true}
-gravity = 0.15
 function gameState.title.init()
 	if(gameState.current == "title")then
 		gameState.title.switchKill = false
@@ -48,35 +79,9 @@ function gameState.game.init()
 		gameState.game.switchKill = false
 		if(not gameState.game.switchInit)then
 		trace("Toute les instance du state [game] ont ete initialiser")
-		player={
-		x=16,
-		y=56,
-		speed = 1,
-		vx = 0,
-		w = 16,
-		h = 16,
-		vy = 0,
-		flip=0,
-		sgnY=0,
-		sgnX=0,
-		jumpHeight = 3,
-		update = {
-			move = function()
-				--trace(mget((player.x+player.vx+7)//8,(player.y+player.vy+16-32)//8))
-				if(collidesolid(player.x+player.vx-player.sgnX,player.y+player.vy+8-32-player.sgnY)) then
-					if (player.sgnX>0) then
-					player.x = player.x - 1
-					end
-					if (player.sgnX<0) then
-					player.x = player.x + 1
-					end
-					if (player.vy>0 or player.vy<0) then
-					player.vy = 0
-				    end
-				end
-		    end
-	     }
-	   }
+		sprites = {}
+		bullets = {}
+		player = newPlayer(16,56)
 		-- Add the initialization of the state			
 		gameState.game.switchInit = true
 		end
@@ -201,6 +206,87 @@ function collidesolid(x,y)
 		   solid(x,y+7) or
 		   solid(x+7,y+7)
 end
+
+--*********************************************
+--                   ^CREER_OBJECT
+--*********************************************
+function newObject(x,y,w,h,spr)
+	local object ={
+		x=x,
+		y=y,
+		w=w,
+		h=h,
+		spr=spr
+    } 
+	return object
+end
+--*********************************************
+--                   ^CREER_PLAYER
+--*********************************************
+function newPlayer(x,y)
+	local player = newObject(x,y,DATA.PLAYER.w,DATA.PLAYER.h,DATA.PLAYER.spr)
+	player.hp = DATA.PLAYER.hp
+	player.type = DATA.PLAYER.type
+	player.timer = Timer(3)
+	player.armor = DATA.PLAYER.armor
+	player.atk = DATA.PLAYER.atk
+	player.flip = DATA.PLAYER.flip
+	player.speed = DATA.PLAYER.speed
+	player.vx = DATA.PLAYER.vx
+	player.vy = DATA.PLAYER.vy
+	player.sgnX = DATA.PLAYER.sgnX
+	player.sgnY = DATA.PLAYER.sgnY
+	player.jumpHeight = DATA.PLAYER.jumpHeight
+	player.update = DATA.PLAYER.update
+	table.insert(sprites,player)
+	return player
+end
+--*********************************************
+--                   ^CREER_ENNEMY
+--*********************************************
+function newEnnemy(x,y,w,h,type,name)
+	local ennemy = newObject(x,y,w,h,spr)
+	for _,foe in pairs(DATA.ENNEMY) do
+		if(foe.name == name) then
+			ennemy.hp = foe.hp
+			ennemy.type = foe.type
+			ennemy.timer = Timer(3)
+			ennemy.armor = foe.armor
+			ennemy.atk = foe.atk
+			ennemy.sleep = true
+			ennemy.flip = foe.flip
+			ennemy.speed = foe.speed
+			ennemy.vx = foe.vx
+			ennemy.vy = ennemy.vy
+			ennemy.sgnX = foe.sgnX
+			ennemy.sgnY = foe.sgnY
+			ennemy.jumpHeight = foe.jumpHeight
+		end
+	end
+	table.insert(sprites,ennemy)
+end
+--*********************************************
+--                   ^CREER_BULLET
+--*********************************************
+function newBullet(x,y,w,h,type,name,atk)
+	local bullet = newObject(x,y,w,h,spr)
+	bullet.timer = Timer(3)
+	table.insert(sprites,bullet)
+end
+--*********************************************
+--                   ^TIMER
+--*********************************************
+function Timer(i)
+	time={}
+	for it = 1,i do
+	time[it] = {
+	start   = 0,
+	['end'] = 2,
+	c       = 0
+    }
+	end
+return time
+end
 --*********************************************
 --                   ^TIC
 --*********************************************
@@ -212,4 +298,13 @@ cls()
 commands.update()
 gameState.update()
 
+
+	--shake
+	-- if btnp()~=0 then shake=30 end
+	-- if shake>0 then
+	-- 	poke(0x3FF9,math.random(-d,d))
+	-- 	poke(0x3FF9+1,math.random(-d,d))
+	-- 	shake=shake-1		
+	-- 	if shake==0 then memset(0x3FF9,0,2) end
+	-- end
 end
