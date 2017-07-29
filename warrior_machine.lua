@@ -7,37 +7,73 @@
 
 DATA = {
 	ENNEMY = { type="ennemy",
-	[1] = {name="ennemy_01",hp=4,armor=0,atk=1,w=8,h=8,spr=4,flip=0,
-		   speed=1,vx=0,sgnX=0,sgnY=0,vy=0,jumpHeight=3}
+	[1] = {name="ennemy_01",hp=4,armor=0,atk=1,w=2,h=1,spr=288,flip=0,
+		   speed=1,vx=0,sgnX=0,sgnY=0,vy=0,jumpHeight=3,scale=2,
+		   timer={{fin=2},
+		   		  {fin=2},
+		   		  {fin=0},
+		   		  {fin=0},
+		   		  {fin=0}
+		   		  }}
 	},
 	PLAYER = {
-		   type="hero",name="hero",hp=50,armor=12,atk=5,w=16,h=16,spr=1,flip=0,
-		   speed=1,vx=0,sgnX=0,sgnY=0,vy=0,jumpHeight=3
+		   type="hero",name="hero",hp=50,armor=12,atk=5,w=2,h=2,spr=256,flip=0,
+		   speed=3,vx=0,sgnX=0,sgnY=0,vy=0,jumpHeight=3,scale=1,
+		   timer={{fin=0},
+		   		  {fin=0},
+		   		  {fin=0}}
 	},
 	BULLET = {
-		   type="bullet",name="bullet_01",w=1,h=1	
+	[1] = {type ="bullet_allie",name="bullet_01",w=1,h=1,spr=511,flip=0,
+		   speed=1,vx=0,sgnX=0,sgnY=0,vy=0,scale=1,
+		   timer={{fin=2},
+		   		  {fin=2},
+		   		  {fin=0},
+		   		  {fin=0},
+		   		  {fin=0}
+		   		  }}
 }
 }
 DATA.PLAYER.update = {
-		move = function()
+		move = function(self)
 			--trace(mget((player.x+player.vx+7)//8,(player.y+player.vy+16-32)//8))
-			if(collidesolid(player.x+player.vx-player.sgnX,player.y+player.vy+8-32-player.sgnY)) then
-				if (player.sgnX>0) then
-				player.x = player.x - 1
+			if(collidesolid(self.x+(self.vx*self.sgnX)-self.sgnX,self.y+(self.vy)+8-32-self.sgnY)) then
+				if (self.sgnX>0) then
+				self.x = self.x - self.speed
 				end
-				if (player.sgnX<0) then
-				player.x = player.x + 1
+				if (self.sgnX<0) then
+				self.x = self.x + self.speed
 				end
-				if (player.vy>0 or player.vy<0) then
-				player.vy = 0
+				if (self.vy>0 or self.vy<0) then
+				self.vy = 0
 			    end
 			end
 	    end
+}
+DATA.ENNEMY[1].update={
+	move = function(self)
+
+	if(self.timer[1].c >= self.timer[1].fin) then
+	self.vx = -self.speed
+	self.x = self.x + self.vx
+	self.timer[2].c = self.timer[2].c + 1/30
+		if(self.timer[2].c >= self.timer[2].fin) then
+		self.timer[1].c = 0
+		self.timer[2].c = 0
+		end
+	else
+	self.vx = self.speed
+	self.x = self.x + self.vx
+	self.timer[1].c = self.timer[1].c + 1/30
+	end
+	end
 }
 shake=0
 d=4
 solids = {[1]=true}
 gravity = 0.15
+sprites = {}
+
 --*********************************************
 --                   ^GAMESTATE
 --*********************************************
@@ -79,9 +115,10 @@ function gameState.game.init()
 		gameState.game.switchKill = false
 		if(not gameState.game.switchInit)then
 		trace("Toute les instance du state [game] ont ete initialiser")
-		sprites = {}
-		bullets = {}
 		player = newPlayer(16,56)
+		newBullet("bullet_01",16,56,1)
+		newEnnemy("ennemy_01",30,70)
+
 		-- Add the initialization of the state			
 		gameState.game.switchInit = true
 		end
@@ -90,8 +127,7 @@ end
 function gameState.game.update()
 	if(gameState.game.switchInit) then
 	map(0, 0, 30, 9, 0, 32, 0, 1)
-	spr(256, player.x, player.y, 0, 1, 0, 0, 2, 2)
-	player.update.move()
+	sprites.update()
 	--start your update state
 	end
 end
@@ -150,20 +186,17 @@ commands.game = function()
 	if btnp(1,0,2)then
 	end
      --UP
-	if(not collidesolid(player.x+player.vx-player.sgnX,player.y+player.vy+8-32-player.sgnY+1)) then
-		player.vy = player.vy + gravity
-		player.y = player.y + player.vy
-	elseif  btnp(0,0,2)then
-		player.vy = 0
-	    player.vy = player.vy - player.jumpHeight
+	if btnp(0,0,2)then
 	end
 	--LEFT/RIGHT
 	if btnp(2,0,2)then
-		player.sgnX = -1		
+		player.sgnX = -1
+		player.flip = 1		
 		player.vx = player.speed * player.sgnX
 		player.x = player.x + player.vx	
 	elseif btnp(3,0,2)then
 		player.sgnX = 1	
+		player.flip = 0		
 		player.vx = player.speed * player.sgnX
 		player.x = player.x + player.vx		
 	else
@@ -171,10 +204,16 @@ commands.game = function()
 		player.vx = player.speed * player.sgnX
 	end
 	--A
-	if btnp(4,0,2)then
+	if(not collidesolid(player.x+player.vx-player.sgnX,player.y+player.vy+8-32-player.sgnY+1)) then
+		player.vy = player.vy + gravity
+		player.y = player.y + player.vy
+	elseif  btnp(4,0,2)then
+		player.vy = 0
+	    player.vy = player.vy - player.jumpHeight
 	end
 	--B
 	if btnp(5,0,2)then
+		newBullet("bullet_01",player.x,player.y,player.atk)
 	end
 	--X
 	if btnp(6,0,2)then
@@ -216,7 +255,8 @@ function newObject(x,y,w,h,spr)
 		y=y,
 		w=w,
 		h=h,
-		spr=spr
+		spr=spr,
+		visibility = true
     } 
 	return object
 end
@@ -225,9 +265,14 @@ end
 --*********************************************
 function newPlayer(x,y)
 	local player = newObject(x,y,DATA.PLAYER.w,DATA.PLAYER.h,DATA.PLAYER.spr)
+	local fin = {}
 	player.hp = DATA.PLAYER.hp
+	player.name = DATA.PLAYER.name
 	player.type = DATA.PLAYER.type
-	player.timer = Timer(3)
+	for i= 1,#DATA.PLAYER.timer do
+		table.insert(fin,DATA.PLAYER.timer[i].fin)
+	end
+	player.timer = Timer(#DATA.PLAYER.timer,fin)
 	player.armor = DATA.PLAYER.armor
 	player.atk = DATA.PLAYER.atk
 	player.flip = DATA.PLAYER.flip
@@ -237,6 +282,7 @@ function newPlayer(x,y)
 	player.sgnX = DATA.PLAYER.sgnX
 	player.sgnY = DATA.PLAYER.sgnY
 	player.jumpHeight = DATA.PLAYER.jumpHeight
+	player.scale = DATA.PLAYER.scale
 	player.update = DATA.PLAYER.update
 	table.insert(sprites,player)
 	return player
@@ -244,55 +290,93 @@ end
 --*********************************************
 --                   ^CREER_ENNEMY
 --*********************************************
-function newEnnemy(x,y,w,h,type,name)
-	local ennemy = newObject(x,y,w,h,spr)
+function newEnnemy(name,x,y)
 	for _,foe in pairs(DATA.ENNEMY) do
 		if(foe.name == name) then
+	       local ennemy = newObject(x,y,foe.w,foe.h,foe.spr)
+		   local fin = {}
 			ennemy.hp = foe.hp
-			ennemy.type = foe.type
-			ennemy.timer = Timer(3)
+			ennemy.type = DATA.ENNEMY.type
+			ennemy.name = foe.name
+		   	for i= 1,#foe.timer do
+			    table.insert(fin,foe.timer[i].fin)
+	        end
+			ennemy.timer = Timer(#foe.timer,fin)
 			ennemy.armor = foe.armor
 			ennemy.atk = foe.atk
 			ennemy.sleep = true
 			ennemy.flip = foe.flip
 			ennemy.speed = foe.speed
+			ennemy.scale = foe.scale
 			ennemy.vx = foe.vx
 			ennemy.vy = ennemy.vy
 			ennemy.sgnX = foe.sgnX
 			ennemy.sgnY = foe.sgnY
 			ennemy.jumpHeight = foe.jumpHeight
+			ennemy.update = foe.update
+			table.insert(sprites,ennemy)
 		end
 	end
-	table.insert(sprites,ennemy)
 end
 --*********************************************
 --                   ^CREER_BULLET
 --*********************************************
-function newBullet(x,y,w,h,type,name,atk)
-	local bullet = newObject(x,y,w,h,spr)
-	bullet.timer = Timer(3)
-	table.insert(sprites,bullet)
+function newBullet(name,x,y,atk)
+	for _,ammo in pairs(DATA.BULLET) do
+		if(ammo.name == name) then
+			local bullet = newObject(x,y,ammo.w,ammo.h,ammo.spr)
+			local fin = {}
+			bullet.type = ammo.type
+			bullet.name = ammo.name	
+			bullet.vx = ammo.vx
+			bullet.vy = ammo.vy
+			bullet.sgnX = ammo.sgnX
+			bullet.sgnY = ammo.sgnY
+			bullet.speed = ammo.speed
+			bullet.scale = ammo.scale
+			bullet.flip = ammo.flip
+			bullet.atk = atk	
+			bullet.sleep = true
+		   	for i= 1,#ammo.timer do
+			    table.insert(fin,ammo.timer[i].fin)
+	        end
+	        bullet.timer = Timer(#ammo.timer,fin)
+			table.insert(sprites,bullet)
+	    end
+	end
 end
 --*********************************************
 --                   ^TIMER
 --*********************************************
-function Timer(i)
+function Timer(i,fin)
 	time={}
 	for it = 1,i do
 	time[it] = {
-	start   = 0,
-	['end'] = 2,
+	switch   = false,
+	fin = fin[it],
 	c       = 0
     }
 	end
 return time
 end
 --*********************************************
+--                   ^SPRITE_UPDATE
+--*********************************************
+function sprites.update()
+	if(gameState[gameState.current]["switchInit"]) then
+		for _,sprite in ipairs(sprites) do
+			spr(sprite.spr, sprite.x, sprite.y, 0, sprite.scale, sprite.flip, 0, sprite.w, sprite.h)
+			if(sprite.update ~= nil) then
+				for func,_ in pairs(sprite.update)do
+				sprite.update[func](sprite)
+				end
+			end
+		end
+    end
+end
+--*********************************************
 --                   ^TIC
 --*********************************************
-function init()
-end
-
 function TIC()
 cls()
 commands.update()
