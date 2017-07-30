@@ -7,7 +7,7 @@
 
 DATA = {
 	ENNEMY = { type="ennemy",
-	[1] = {name="ennemy_01",hp=4,armor=0,atk=1,w=2,h=1,spr=288,flip=0,
+	["ennemy_01"] = {name="ennemy_01",hp=4,armor=0,atk=1,w=2,h=1,spr=288,flip=0,
 		   speed=1,vx=0,sgnX=0,sgnY=0,vy=0,jumpHeight=3,scale=2,
 		   timer={{fin=2},
 		   		  {fin=2},
@@ -24,7 +24,7 @@ DATA = {
 		   		  {fin=0}}
 	},
 	BULLET = {
-	[1] = {type ="bullet_allie",name="bullet_01",w=1,h=1,spr=511,flip=0,
+	["bullet_01"] = {type ="bullet_allie",name="bullet_01",w=1,h=1,spr=511,flip=0,
 		   speed=1,vx=0,sgnX=0,sgnY=0,vy=0,scale=1,
 		   timer={{fin=2},
 		   		  {fin=2},
@@ -50,7 +50,7 @@ DATA.PLAYER.update = {
 			end
 	    end
 }
-DATA.ENNEMY[1].update={
+DATA.ENNEMY["ennemy_01"].update={
 	move = function(self)
 
 	if(self.timer[1].c >= self.timer[1].fin) then
@@ -249,101 +249,44 @@ end
 --*********************************************
 --                   ^CREER_OBJECT
 --*********************************************
-function newObject(x,y,w,h,spr)
-	local object ={
-		x=x,
-		y=y,
-		w=w,
-		h=h,
-		spr=spr,
-		visibility = true
-    } 
+function newObject(data,x,y)
+    local object = {}
+	local fin = {}
+    for k,v in pairs(data) do
+    	object[k]=v
+    end
+	for i= 1,#data.timer do
+		table.insert(fin,data.timer[i].fin)
+	end
+	object.timer = Timer(#data.timer,fin)
+    object.x = x
+    object.y = y
+    object.visibility = true
+    object.sleep = true
 	return object
 end
 --*********************************************
 --                   ^CREER_PLAYER
 --*********************************************
 function newPlayer(x,y)
-	local player = newObject(x,y,DATA.PLAYER.w,DATA.PLAYER.h,DATA.PLAYER.spr)
-	local fin = {}
-	player.hp = DATA.PLAYER.hp
-	player.name = DATA.PLAYER.name
-	player.type = DATA.PLAYER.type
-	for i= 1,#DATA.PLAYER.timer do
-		table.insert(fin,DATA.PLAYER.timer[i].fin)
-	end
-	player.timer = Timer(#DATA.PLAYER.timer,fin)
-	player.armor = DATA.PLAYER.armor
-	player.atk = DATA.PLAYER.atk
-	player.flip = DATA.PLAYER.flip
-	player.speed = DATA.PLAYER.speed
-	player.vx = DATA.PLAYER.vx
-	player.vy = DATA.PLAYER.vy
-	player.sgnX = DATA.PLAYER.sgnX
-	player.sgnY = DATA.PLAYER.sgnY
-	player.jumpHeight = DATA.PLAYER.jumpHeight
-	player.scale = DATA.PLAYER.scale
-	player.update = DATA.PLAYER.update
+	local player = newObject(DATA.PLAYER,x,y)
 	table.insert(sprites,player)
 	return player
 end
 --*********************************************
 --                   ^CREER_ENNEMY
 --*********************************************
-function newEnnemy(name,x,y)
-	for _,foe in pairs(DATA.ENNEMY) do
-		if(foe.name == name) then
-	       local ennemy = newObject(x,y,foe.w,foe.h,foe.spr)
-		   local fin = {}
-			ennemy.hp = foe.hp
-			ennemy.type = DATA.ENNEMY.type
-			ennemy.name = foe.name
-		   	for i= 1,#foe.timer do
-			    table.insert(fin,foe.timer[i].fin)
-	        end
-			ennemy.timer = Timer(#foe.timer,fin)
-			ennemy.armor = foe.armor
-			ennemy.atk = foe.atk
-			ennemy.sleep = true
-			ennemy.flip = foe.flip
-			ennemy.speed = foe.speed
-			ennemy.scale = foe.scale
-			ennemy.vx = foe.vx
-			ennemy.vy = ennemy.vy
-			ennemy.sgnX = foe.sgnX
-			ennemy.sgnY = foe.sgnY
-			ennemy.jumpHeight = foe.jumpHeight
-			ennemy.update = foe.update
-			table.insert(sprites,ennemy)
-		end
-	end
+function newEnnemy(data,x,y)
+   local ennemy = newObject(DATA.ENNEMY[data],x,y)
+	table.insert(sprites,ennemy)
 end
 --*********************************************
 --                   ^CREER_BULLET
 --*********************************************
-function newBullet(name,x,y,atk)
-	for _,ammo in pairs(DATA.BULLET) do
-		if(ammo.name == name) then
-			local bullet = newObject(x,y,ammo.w,ammo.h,ammo.spr)
-			local fin = {}
-			bullet.type = ammo.type
-			bullet.name = ammo.name	
-			bullet.vx = ammo.vx
-			bullet.vy = ammo.vy
-			bullet.sgnX = ammo.sgnX
-			bullet.sgnY = ammo.sgnY
-			bullet.speed = ammo.speed
-			bullet.scale = ammo.scale
-			bullet.flip = ammo.flip
-			bullet.atk = atk	
-			bullet.sleep = true
-		   	for i= 1,#ammo.timer do
-			    table.insert(fin,ammo.timer[i].fin)
-	        end
-	        bullet.timer = Timer(#ammo.timer,fin)
-			table.insert(sprites,bullet)
-	    end
-	end
+function newBullet(data,x,y,atk)
+	local bullet = newObject(DATA.BULLET[data],x,y)
+	bullet.atk = atk
+	table.insert(sprites,bullet)
 end
 --*********************************************
 --                   ^TIMER
