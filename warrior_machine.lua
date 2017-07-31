@@ -6,7 +6,7 @@
 -- script: lua
 debug = 0
 a= 0
-
+music(0)
 DATA = {
 	ENNEMY = { type="ennemy",
 	["ennemy_01"] = {name="ennemy_01",hp=4,armor=0,atk=1,w=2,h=1,spr=288,flip=0,
@@ -152,6 +152,7 @@ DATA.PLAYER.update = {
 }
 DATA.PLAYER.hitboxFunc = function(self,sprite)
 	if(sprite.name=="bonus_01")then
+		sfx(8, "C-5", 15, 1, 5, 0)
 		self.hp = self.hp + 5
 		sprite.kill = true
 		if(self.hp >self.mhp)then
@@ -292,6 +293,8 @@ function gameState.game.init()
 end
 function gameState.game.update()
 	if(gameState.game.switchInit) then
+	map(210, 0, 30, 17, 0, 0, 0, 1)
+	map(210, 17, 30, 17, 0, 0, 0, 1)
 	map(0, 0, 90, 68, 0-camera.x+player.offsetX, 0-camera.y+player.offsetY, 0, 1)
 	sprites.update()
 	energie.update(energie)
@@ -396,6 +399,7 @@ commands.game = function()
 		player.y = player.y + player.vy
 		camera.update(camera)
 	elseif  btnp(4,0,2)then
+		sfx(9, "A-3", 15, 1, 5, 0)
 		player.vy = 0
 		player.hp = player.hp - 0.0600
 	    player.vy = player.vy - player.jumpHeight
@@ -406,6 +410,7 @@ commands.game = function()
 		if(player.flip==1)then
 			dir=-1
 		end
+		sfx(10, "D-4", 15, 1, 5, -1)
 		player.hp = player.hp - 1
 		newBullet("bullet_01",player.x-player.offsetX+80,player.y-player.offsetY+80,player.atk,dir)
 	end
@@ -634,17 +639,21 @@ function sprites.generate(bonus,ennemy)
 		--trace(mget((self.x+(self.vx*self.sgnX)-self.sgnX+camera.x+(flip))//8,
 			       --(self.y+(self.vy)+8-self.sgnY+(camera.y))//8)) 
 end
+
 --*********************************************
 --                   ^DISPLAY_ENERGIE
 --*********************************************
+
 function energie.update(self)
 	local fct =player.hp/player.mhp
 	rect(self.loss.x, self.loss.y, self.loss.w, self.loss.h, self.loss.color)
 	rect(self.life.x, self.life.y, self.life.w*fct, self.life.h, self.life.color)
 end
+
 --*********************************************
 --                   ^TIC
 --*********************************************
+
 function TIC()
 cls()
 debug = 0
@@ -654,6 +663,7 @@ if(player ~=nil) then
 	if(player.hp<=0)then
 		print("GAME OVER",86,104,14,false,3)
 	end
+	
 end
 	--shake
 	-- if btnp()~=0 then shake=30 end
