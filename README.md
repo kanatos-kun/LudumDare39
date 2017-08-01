@@ -71,7 +71,7 @@
     <h3>visibilité du code sur sublime-text 3</h3>
     <p>J'essais toujour d'aérer du mieux que je puisse mon code mais au bout de 500-600 lignes,
     lorsque l'ont doit aller de la ligne 0 à la ligne 474 pour checker une information c'est
-    une douleur au cerveau, il faudrait que je voit si il y a pas un moyen d'avoir des marques-pages
+    une douleur au cerveau, il faudrait que je vois si il n'y a pas un moyen d'avoir des marques-pages
     commen avec zérobrane studio.</p>
   </li>
 </ul>
